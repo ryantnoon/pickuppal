@@ -231,7 +231,7 @@ export function registerRoutes(server: Server, app: Express) {
         const imageData = match[2];
 
         const message = await client.messages.create({
-          model: "claude_sonnet_4_6",
+          model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
           max_tokens: 1024,
           messages: [{
             role: "user",
