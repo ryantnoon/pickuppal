@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
-  DollarSign, Tag, Star, Clock, CalendarDays, CheckCircle2, ImagePlus, ChevronLeft, ChevronRight,
+  DollarSign, Tag, Star, Clock, CalendarDays, CheckCircle2, ImagePlus, ChevronLeft, ChevronRight, ArrowLeft,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfToday } from "date-fns";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Link } from "wouter";
 import type { Listing, TimeSlot } from "@shared/schema";
 
 function formatTime(time: string) {
@@ -135,14 +136,14 @@ export default function PublicListing() {
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-label="PickupPal">
               <rect x="2" y="2" width="28" height="28" rx="6" stroke="currentColor" strokeWidth="2" className="text-primary" />
               <path d="M10 22V14l6-4 6 4v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" />
               <rect x="13" y="18" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.5" className="text-primary" />
             </svg>
             <span className="font-semibold text-sm">PickupPal</span>
-          </div>
+          </Link>
           <ThemeToggle />
         </div>
       </header>
