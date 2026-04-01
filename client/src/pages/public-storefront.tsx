@@ -36,9 +36,9 @@ export default function PublicStorefront() {
           <p className="text-sm text-muted-foreground">
             Browse available items and reserve a pickup time
           </p>
-          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
-            <MapPin className="w-3 h-3" />
-            Contact details and pickup location provided upon booking confirmation
+          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2.5">
+            <MapPin className="w-4 h-4 flex-shrink-0" />
+            <span>All items located in Downingtown, PA. Specific address and contact information will be provided once meeting time is booked.</span>
           </div>
         </div>
 
