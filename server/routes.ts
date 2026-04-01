@@ -1,15 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./supabase-storage";
-import { execSync } from "child_process";
 import Anthropic from "@anthropic-ai/sdk";
-
-function callExternalTool(sourceId: string, toolName: string, args: Record<string, any>) {
-  const params = JSON.stringify({ source_id: sourceId, tool_name: toolName, arguments: args });
-  const escaped = params.replace(/'/g, "'\\''");
-  const result = execSync(`external-tool call '${escaped}'`, { timeout: 30000 }).toString();
-  return JSON.parse(result);
-}
+import { getAuthUrl, handleCallback, createCalendarEvent, isCalendarConnected } from "./google-calendar";
 
 export function registerRoutes(server: Server, app: Express) {
   // --- LISTINGS ---
@@ -196,27 +189,17 @@ export function registerRoutes(server: Server, app: Express) {
 
       let calendarEventId = "";
       try {
-        const startDateTime = `${slot.date}T${slot.startTime}:00-04:00`;
-        const endDateTime = `${slot.date}T${slot.endTime}:00-04:00`;
+        if (isCalendarConnected(adminSettings)) {
+          const startDateTime = `${slot.date}T${slot.startTime}:00`;
+          const endDateTime = `${slot.date}T${slot.endTime}:00`;
 
-        const result = callExternalTool("gcal", "update_calendar", {
-          create_actions: [{
-            action: "create",
+          calendarEventId = await createCalendarEvent({
             title: `Pickup: ${listing.title} - ${booking.buyerName}`,
             description: `Item: ${listing.title}\nPrice: $${listing.price}\nBuyer: ${booking.buyerName}\nPhone: ${booking.buyerPhone}\nEmail: ${booking.buyerEmail}\n${booking.notes ? `Notes: ${booking.notes}` : ""}`,
-            start_date_time: startDateTime,
-            end_date_time: endDateTime,
-            location: adminSettings.pickupLocation || null,
-            attendees: null,
-            meeting_provider: null,
-          }],
-          delete_actions: [],
-          update_actions: [],
-        });
-        if (result && typeof result === "object") {
-          const resultStr = JSON.stringify(result);
-          const eventIdMatch = resultStr.match(/"event_id"\s*:\s*"([^"]+)"/);
-          if (eventIdMatch) calendarEventId = eventIdMatch[1];
+            startDateTime,
+            endDateTime,
+            location: adminSettings.pickupLocation || undefined,
+          });
         }
       } catch (err) {
         console.error("Calendar event creation failed:", err);
@@ -319,6 +302,33 @@ export function registerRoutes(server: Server, app: Express) {
       console.error("Import extraction failed:", err);
       res.status(500).json({ error: err.message || "Extraction failed" });
     }
+  });
+
+  // --- GOOGLE CALENDAR OAUTH ---
+  app.get("/api/auth/google", (_req, res) => {
+    try {
+      const url = getAuthUrl();
+      res.json({ url });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get("/api/auth/google/callback", async (req, res) => {
+    try {
+      const code = req.query.code as string;
+      if (!code) return res.status(400).send("No authorization code provided");
+      await handleCallback(code);
+      // Redirect back to admin settings with success message
+      res.send(`<html><body><h2>Google Calendar connected!</h2><p>You can close this window and go back to PickupPal.</p><script>window.close();</script></body></html>`);
+    } catch (e: any) {
+      res.status(500).send(`<html><body><h2>Connection failed</h2><p>${e.message}</p></body></html>`);
+    }
+  });
+
+  app.get("/api/auth/google/status", async (_req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      res.json({ connected: isCalendarConnected(settings) });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   // --- AUTH ---

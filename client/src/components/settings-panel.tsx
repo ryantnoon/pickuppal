@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Shield, MapPin, Phone } from "lucide-react";
+import { Save, Shield, MapPin, Phone, Calendar, CheckCircle2, ExternalLink } from "lucide-react";
 import type { Settings } from "@shared/schema";
 
 export function SettingsPanel() {
@@ -128,6 +128,58 @@ export function SettingsPanel() {
           {updateMutation.isPending ? "Saving..." : "Save Settings"}
         </Button>
       </form>
+
+      <GoogleCalendarCard />
     </div>
+  );
+}
+
+function GoogleCalendarCard() {
+  const { data: status, isLoading } = useQuery<{ connected: boolean }>({
+    queryKey: ["/api/auth/google/status"],
+    refetchInterval: 5000,
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", "/api/auth/google");
+      const { url } = await res.json();
+      window.open(url, "_blank", "width=500,height=600");
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          <CardTitle className="text-sm">Google Calendar</CardTitle>
+        </div>
+        <CardDescription className="text-xs">
+          Auto-create calendar events when bookings are approved
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="h-8 bg-muted rounded animate-pulse" />
+        ) : status?.connected ? (
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Connected to Google Calendar</span>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => connectMutation.mutate()}
+            disabled={connectMutation.isPending}
+            data-testid="button-connect-gcal"
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            Connect Google Calendar
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

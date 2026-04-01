@@ -57,6 +57,7 @@ function toDb(obj: any): any {
     sellerName: "seller_name",
     pickupLocation: "pickup_location",
     contactPhone: "contact_phone",
+    googleTokens: "google_tokens",
   };
   const result: any = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -85,6 +86,7 @@ function fromDb(obj: any): any {
     seller_name: "sellerName",
     pickup_location: "pickupLocation",
     contact_phone: "contactPhone",
+    google_tokens: "googleTokens",
   };
   const result: any = {};
   for (const [k, v] of Object.entries(obj)) {
