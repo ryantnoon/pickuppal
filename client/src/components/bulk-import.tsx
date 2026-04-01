@@ -110,20 +110,32 @@ export function BulkImport({ onClose }: { onClose: () => void }) {
     setScreenshotPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handlePhotoUpload = (listingIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (listingIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      const dataUri = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      try {
+        const res = await apiRequest("POST", "/api/upload/photo", { image: dataUri, fileName: file.name });
+        const { url } = await res.json();
         setListings((prev) =>
           prev.map((l, i) =>
-            i === listingIdx ? { ...l, photos: [...l.photos, reader.result as string] } : l
+            i === listingIdx ? { ...l, photos: [...l.photos, url] } : l
           )
         );
-      };
-      reader.readAsDataURL(file);
-    });
+      } catch {
+        // Fallback to base64
+        setListings((prev) =>
+          prev.map((l, i) =>
+            i === listingIdx ? { ...l, photos: [...l.photos, dataUri] } : l
+          )
+        );
+      }
+    }
   };
 
   const removePhoto = (listingIdx: number, photoIdx: number) => {

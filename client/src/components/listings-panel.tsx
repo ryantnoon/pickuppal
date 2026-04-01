@@ -231,16 +231,28 @@ function ListingForm({
   const [status, setStatus] = useState(listing?.status || "active");
   const [images, setImages] = useState<string[]>(JSON.parse(listing?.images || "[]"));
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach((file) => {
+    setUploading(true);
+    for (const file of Array.from(files)) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImages((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
+      const dataUri = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      try {
+        const res = await apiRequest("POST", "/api/upload/photo", { image: dataUri, fileName: file.name });
+        const { url } = await res.json();
+        setImages((prev) => [...prev, url]);
+      } catch {
+        // Fallback to base64 if upload fails
+        setImages((prev) => [...prev, dataUri]);
+      }
+    }
+    setUploading(false);
   };
 
   const removeImage = (idx: number) => {
@@ -360,8 +372,8 @@ function ListingForm({
           </label>
         </div>
       </div>
-      <Button type="submit" className="w-full" disabled={isPending || !title || !price} data-testid="button-submit-listing">
-        {isPending ? "Saving..." : listing ? "Update Listing" : "Create Listing"}
+      <Button type="submit" className="w-full" disabled={isPending || uploading || !title || !price} data-testid="button-submit-listing">
+        {uploading ? "Uploading photos..." : isPending ? "Saving..." : listing ? "Update Listing" : "Create Listing"}
       </Button>
     </form>
   );
