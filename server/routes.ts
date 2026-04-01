@@ -100,7 +100,7 @@ export function registerRoutes(server: Server, app: Express) {
   // Auto-generate weekly time slots (weekdays 6pm-9pm ET, 30-min increments)
   app.post("/api/timeslots/generate-week", async (req, res) => {
     try {
-      const { weeksAhead = 2 } = req.body || {};
+      const { weeksAhead = 1 } = req.body || {};
       const created = [];
       const existing = await storage.getTimeSlots();
       const existingDates = new Set(existing.map((s: any) => `${s.date}-${s.startTime}`));

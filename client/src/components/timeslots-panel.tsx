@@ -44,12 +44,12 @@ export function TimeSlotsPanel() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/timeslots/generate-week", { weeksAhead: 2 });
+      const res = await apiRequest("POST", "/api/timeslots/generate-week", { weeksAhead: 1 });
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/timeslots"] });
-      toast({ title: `${data.created} time slots generated`, description: "Weekdays 6–9 PM, 30-min slots for the next 2 weeks" });
+      toast({ title: `${data.created} time slots generated`, description: "Weekdays 6–9 PM, 30-min slots for the next week" });
     },
     onError: (err: Error) => {
       toast({ title: "Generation failed", description: err.message, variant: "destructive" });
@@ -83,7 +83,7 @@ export function TimeSlotsPanel() {
             {generateMutation.isPending ? (
               <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Generating...</>
             ) : (
-              <><RefreshCw className="w-4 h-4 mr-1" /> Auto-Fill 2 Weeks</>
+              <><RefreshCw className="w-4 h-4 mr-1" /> Auto-Fill Week</>
             )}
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
