@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./supabase-storage";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAuthUrl, handleCallback, createCalendarEvent, isCalendarConnected } from "./google-calendar";
+import { sendBookingNotification } from "./email-notify";
 
 export function registerRoutes(server: Server, app: Express) {
   // --- LISTINGS ---
@@ -172,6 +173,10 @@ export function registerRoutes(server: Server, app: Express) {
 
       const booking = await storage.createBooking(req.body);
       await storage.incrementBookingCount(req.body.timeSlotId);
+
+      // Send email notification (async, don't block response)
+      sendBookingNotification(booking, listing, slot).catch(console.error);
+
       res.status(201).json(booking);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
