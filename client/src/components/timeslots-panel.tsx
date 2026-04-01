@@ -56,12 +56,16 @@ export function TimeSlotsPanel() {
     },
   });
 
-  // Group slots by date
+  // Group slots by date and sort by start time within each date
   const grouped = slots.reduce((acc, slot) => {
     if (!acc[slot.date]) acc[slot.date] = [];
     acc[slot.date].push(slot);
     return acc;
   }, {} as Record<string, TimeSlot[]>);
+
+  for (const date of Object.keys(grouped)) {
+    grouped[date].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }
 
   const sortedDates = Object.keys(grouped).sort();
 
