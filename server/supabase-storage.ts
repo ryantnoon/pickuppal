@@ -261,6 +261,10 @@ class SupabaseStorage implements IStorage {
     return fromDb(data);
   }
 
+  async deleteBooking(id: number) {
+    await supabase.from("pickuppal_bookings").delete().eq("id", id);
+  }
+
   async updateBookingStatus(id: number, status: string, calendarEventId?: string) {
     const update: any = { status };
     if (calendarEventId !== undefined) update.calendar_event_id = calendarEventId;

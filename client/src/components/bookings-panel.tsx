@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, CalendarCheck, Clock, User, Phone, Mail, Package } from "lucide-react";
+import { Check, X, CalendarCheck, Clock, User, Phone, Mail, Package, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Booking, Listing, TimeSlot } from "@shared/schema";
 
@@ -65,6 +65,17 @@ export function BookingsPanel() {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/listings"] });
       toast({ title: "Marked as completed. Listing marked sold." });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/bookings/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/timeslots"] });
+      toast({ title: "Booking deleted" });
     },
   });
 
@@ -215,6 +226,15 @@ export function BookingsPanel() {
                             Mark Sold
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => deleteMutation.mutate(booking.id)}
+                          data-testid={`button-delete-booking-${booking.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

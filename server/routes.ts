@@ -239,6 +239,21 @@ export function registerRoutes(server: Server, app: Express) {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  app.delete("/api/bookings/:id", async (req, res) => {
+    try {
+      const booking = await storage.getBooking(Number(req.params.id));
+      if (!booking) return res.status(404).json({ error: "Booking not found" });
+
+      // Free up the time slot if booking was pending or approved
+      if (booking.status === "pending" || booking.status === "approved") {
+        await storage.decrementBookingCount(booking.timeSlotId);
+      }
+
+      await storage.deleteBooking(Number(req.params.id));
+      res.json({ success: true });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // --- SETTINGS ---
   app.get("/api/settings", async (_req, res) => {
     try { res.json(await storage.getSettings()); }
