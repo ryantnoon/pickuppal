@@ -51,7 +51,7 @@ export function BulkImport({ onClose }: { onClose: () => void }) {
         category: categories.includes(l.category) ? l.category : "Other",
         condition: conditions.includes(l.condition) ? l.condition : "Used",
         screenshotPreview: screenshotPreviews[i],
-        photos: [],
+        photos: l.photoUrl ? [l.photoUrl] : [],
         error: l.error,
       }));
       setListings(extracted);

@@ -224,11 +224,22 @@ export function registerRoutes(server: Server, app: Express) {
       const client = new Anthropic();
       const results = [];
 
-      for (const screenshot of screenshots) {
+      for (let i = 0; i < screenshots.length; i++) {
+        const screenshot = screenshots[i];
         const match = screenshot.match(/^data:(image\/[^;]+);base64,(.+)$/);
         if (!match) { results.push({ error: "Invalid image format" }); continue; }
         const mediaType = match[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
         const imageData = match[2];
+
+        // Upload the screenshot to Supabase Storage as the listing photo
+        let photoUrl = "";
+        try {
+          const ext = mediaType.split("/")[1] || "png";
+          const buffer = Buffer.from(imageData, "base64");
+          photoUrl = await storage.uploadPhoto(buffer, `import-${Date.now()}-${i}.${ext}`, mediaType);
+        } catch (uploadErr) {
+          console.error("Screenshot upload failed:", uploadErr);
+        }
 
         const message = await client.messages.create({
           model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
@@ -245,9 +256,13 @@ export function registerRoutes(server: Server, app: Express) {
         const text = message.content[0].type === "text" ? message.content[0].text : "";
         try {
           const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) { results.push(JSON.parse(jsonMatch[0])); }
-          else { results.push({ error: "Could not parse AI response", raw: text }); }
-        } catch { results.push({ error: "Failed to parse AI response", raw: text }); }
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            parsed.photoUrl = photoUrl;
+            results.push(parsed);
+          }
+          else { results.push({ error: "Could not parse AI response", raw: text, photoUrl }); }
+        } catch { results.push({ error: "Failed to parse AI response", raw: text, photoUrl }); }
       }
 
       res.json({ listings: results });
