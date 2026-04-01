@@ -134,7 +134,7 @@ export function registerRoutes(server: Server, app: Express) {
               date: dateStr,
               startTime: t.start,
               endTime: t.end,
-              maxBookings: 1,
+              maxBookings: 4,
               currentBookings: 0,
             });
             created.push(slot);
