@@ -97,6 +97,55 @@ export function registerRoutes(server: Server, app: Express) {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // Auto-generate weekly time slots (weekdays 6pm-9pm ET, 30-min increments)
+  app.post("/api/timeslots/generate-week", async (req, res) => {
+    try {
+      const { weeksAhead = 2 } = req.body || {};
+      const created = [];
+      const existing = await storage.getTimeSlots();
+      const existingDates = new Set(existing.map((s: any) => `${s.date}-${s.startTime}`));
+
+      const now = new Date();
+      // Generate for the next N weeks
+      for (let w = 0; w < weeksAhead; w++) {
+        for (let d = 0; d < 7; d++) {
+          const date = new Date(now);
+          date.setDate(now.getDate() + (w * 7) + d);
+          const dayOfWeek = date.getDay(); // 0=Sun, 6=Sat
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
+
+          const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+
+          // 6:00 PM to 9:00 PM in 30-min increments = 6 slots
+          const times = [
+            { start: "18:00", end: "18:30" },
+            { start: "18:30", end: "19:00" },
+            { start: "19:00", end: "19:30" },
+            { start: "19:30", end: "20:00" },
+            { start: "20:00", end: "20:30" },
+            { start: "20:30", end: "21:00" },
+          ];
+
+          for (const t of times) {
+            const key = `${dateStr}-${t.start}`;
+            if (existingDates.has(key)) continue; // Don't duplicate
+
+            const slot = await storage.createTimeSlot({
+              date: dateStr,
+              startTime: t.start,
+              endTime: t.end,
+              maxBookings: 1,
+              currentBookings: 0,
+            });
+            created.push(slot);
+          }
+        }
+      }
+
+      res.json({ created: created.length, message: `Generated ${created.length} time slots` });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   app.delete("/api/timeslots/:id", async (req, res) => {
     try {
       await storage.deleteTimeSlot(Number(req.params.id));

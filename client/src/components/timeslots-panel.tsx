@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Clock, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Clock, CalendarDays, RefreshCw, Loader2 } from "lucide-react";
 import { format, parseISO, isBefore, startOfToday } from "date-fns";
 import type { TimeSlot } from "@shared/schema";
 
@@ -42,6 +42,20 @@ export function TimeSlotsPanel() {
     },
   });
 
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/timeslots/generate-week", { weeksAhead: 2 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/timeslots"] });
+      toast({ title: `${data.created} time slots generated`, description: "Weekdays 6–9 PM, 30-min slots for the next 2 weeks" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   // Group slots by date
   const grouped = slots.reduce((acc, slot) => {
     if (!acc[slot.date]) acc[slot.date] = [];
@@ -58,12 +72,26 @@ export function TimeSlotsPanel() {
           <h2 className="text-lg font-semibold" data-testid="text-timeslots-title">Pickup Time Slots</h2>
           <p className="text-sm text-muted-foreground">Create slots when you're available for pickups</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-testid="button-add-timeslot">
-              <Plus className="w-4 h-4 mr-1" /> Add Slot
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
+            data-testid="button-generate-slots"
+          >
+            {generateMutation.isPending ? (
+              <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Generating...</>
+            ) : (
+              <><RefreshCw className="w-4 h-4 mr-1" /> Auto-Fill 2 Weeks</>
+            )}
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-add-timeslot">
+                <Plus className="w-4 h-4 mr-1" /> Add Slot
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>New Time Slot</DialogTitle>
@@ -73,7 +101,8 @@ export function TimeSlotsPanel() {
               isPending={createMutation.isPending}
             />
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {isLoading ? (
