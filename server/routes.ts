@@ -305,9 +305,9 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   // --- GOOGLE CALENDAR OAUTH ---
-  app.get("/api/auth/google", (_req, res) => {
+  app.get("/api/auth/google", async (_req, res) => {
     try {
-      const url = getAuthUrl();
+      const url = await getAuthUrl();
       res.json({ url });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
