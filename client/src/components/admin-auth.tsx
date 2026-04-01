@@ -54,7 +54,7 @@ export function AdminAuth({ onSuccess }: AdminAuthProps) {
               {loading ? "Verifying..." : "Enter"}
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground text-center mt-4">Default PIN: 1234</p>
+
         </CardContent>
       </Card>
     </div>

@@ -184,6 +184,15 @@ export function BookingsPanel() {
                         >
                           <X className="w-3.5 h-3.5 mr-1" /> Deny
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => deleteMutation.mutate(booking.id)}
+                          data-testid={`button-delete-pending-${booking.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
