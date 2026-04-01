@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Copy, ExternalLink, ImagePlus, Package } from "lucide-react";
+import { Plus, Trash2, Copy, ExternalLink, ImagePlus, Package, Upload } from "lucide-react";
+import { BulkImport } from "./bulk-import";
 import type { Listing } from "@shared/schema";
 
 const categories = ["Electronics", "Furniture", "Vehicles", "Clothing", "Tools", "Sports", "Home", "Other"];
@@ -19,6 +20,7 @@ const conditions = ["New", "Like New", "Good", "Fair", "Used"];
 export function ListingsPanel() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [showImport, setShowImport] = useState(false);
   const { toast } = useToast();
 
   const { data: listings = [], isLoading } = useQuery<Listing[]>({
@@ -82,12 +84,16 @@ export function ListingsPanel() {
           <h2 className="text-lg font-semibold" data-testid="text-listings-title">Your Listings</h2>
           <p className="text-sm text-muted-foreground">{listings.length} item{listings.length !== 1 ? "s" : ""}</p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditingId(null); }}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-testid="button-add-listing">
-              <Plus className="w-4 h-4 mr-1" /> Add Listing
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowImport(true)} data-testid="button-bulk-import">
+            <Upload className="w-4 h-4 mr-1" /> Import
+          </Button>
+          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditingId(null); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-add-listing">
+                <Plus className="w-4 h-4 mr-1" /> Add Listing
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? "Edit Listing" : "New Listing"}</DialogTitle>
@@ -104,8 +110,19 @@ export function ListingsPanel() {
               isPending={createMutation.isPending || updateMutation.isPending}
             />
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={showImport} onOpenChange={setShowImport}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Listings</DialogTitle>
+          </DialogHeader>
+          <BulkImport onClose={() => setShowImport(false)} />
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

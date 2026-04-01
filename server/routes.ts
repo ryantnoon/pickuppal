@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { insertListingSchema, insertTimeSlotSchema, insertBookingSchema } from "@shared/schema";
 import { execSync } from "child_process";
+import Anthropic from "@anthropic-ai/sdk";
 
 function callExternalTool(sourceId: string, toolName: string, args: Record<string, any>) {
   const params = JSON.stringify({ source_id: sourceId, tool_name: toolName, arguments: args });
@@ -178,6 +179,74 @@ export function registerRoutes(server: Server, app: Express) {
   app.patch("/api/settings", (req, res) => {
     const updated = storage.updateSettings(req.body);
     res.json(updated);
+  });
+
+  // --- BULK IMPORT (AI Vision) ---
+  app.post("/api/import/extract", async (req, res) => {
+    try {
+      const { screenshots } = req.body; // Array of base64 data URIs
+      if (!screenshots || !Array.isArray(screenshots) || screenshots.length === 0) {
+        return res.status(400).json({ error: "No screenshots provided" });
+      }
+
+      const client = new Anthropic();
+      const results = [];
+
+      for (const screenshot of screenshots) {
+        // Parse data URI
+        const match = screenshot.match(/^data:(image\/[^;]+);base64,(.+)$/);
+        if (!match) {
+          results.push({ error: "Invalid image format" });
+          continue;
+        }
+        const mediaType = match[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+        const imageData = match[2];
+
+        const message = await client.messages.create({
+          model: "claude_sonnet_4_6",
+          max_tokens: 1024,
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: { type: "base64", media_type: mediaType, data: imageData },
+              },
+              {
+                type: "text",
+                text: `This is a screenshot of a Facebook Marketplace listing. Extract the following details and return them as JSON only (no other text):
+{
+  "title": "item title",
+  "price": "numeric price only, no dollar sign",
+  "description": "item description if visible, or generate a brief one from what you see",
+  "category": "one of: Electronics, Furniture, Vehicles, Clothing, Tools, Sports, Home, Other",
+  "condition": "one of: New, Like New, Good, Fair, Used"
+}
+If you cannot determine a field, use a reasonable default. Return ONLY the JSON object.`,
+              },
+            ],
+          }],
+        });
+
+        const text = message.content[0].type === "text" ? message.content[0].text : "";
+        try {
+          // Extract JSON from response (might have markdown code fences)
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            results.push(JSON.parse(jsonMatch[0]));
+          } else {
+            results.push({ error: "Could not parse AI response", raw: text });
+          }
+        } catch {
+          results.push({ error: "Failed to parse AI response", raw: text });
+        }
+      }
+
+      res.json({ listings: results });
+    } catch (err: any) {
+      console.error("Import extraction failed:", err);
+      res.status(500).json({ error: err.message || "Extraction failed" });
+    }
   });
 
   // --- AUTH ---
