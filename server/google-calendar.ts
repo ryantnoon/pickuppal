@@ -1,16 +1,27 @@
 import { google } from "googleapis";
 import { storage } from "./supabase-storage";
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "https://pickuppal.onrender.com/api/auth/google/callback";
 
-export function getOAuth2Client() {
-  return new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+async function getGoogleCreds(): Promise<{ clientId: string; clientSecret: string }> {
+  // Try env vars first, then fall back to Supabase settings
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    return { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET };
+  }
+  const settings = await storage.getSettings();
+  return {
+    clientId: settings.googleClientId || "",
+    clientSecret: settings.googleClientSecret || "",
+  };
 }
 
-export function getAuthUrl() {
-  const oauth2Client = getOAuth2Client();
+export async function getOAuth2Client() {
+  const { clientId, clientSecret } = await getGoogleCreds();
+  return new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
+}
+
+export async function getAuthUrl() {
+  const oauth2Client = await getOAuth2Client();
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
@@ -19,7 +30,7 @@ export function getAuthUrl() {
 }
 
 export async function handleCallback(code: string): Promise<string> {
-  const oauth2Client = getOAuth2Client();
+  const oauth2Client = await getOAuth2Client();
   const { tokens } = await oauth2Client.getToken(code);
 
   // Store tokens in settings
@@ -43,7 +54,7 @@ export async function createCalendarEvent(eventData: {
   }
 
   const tokens = JSON.parse(settings.googleTokens);
-  const oauth2Client = getOAuth2Client();
+  const oauth2Client = await getOAuth2Client();
   oauth2Client.setCredentials(tokens);
 
   // Listen for token refresh events and save new tokens
