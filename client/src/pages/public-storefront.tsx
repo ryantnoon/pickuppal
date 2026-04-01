@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Tag, Star, ImagePlus, Package } from "lucide-react";
+import { Tag, Star, ImagePlus, Package, MapPin } from "lucide-react";
 import type { Listing } from "@shared/schema";
 
 export default function PublicStorefront() {
@@ -29,13 +29,17 @@ export default function PublicStorefront() {
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Hero section */}
-        <div className="text-center mb-8 space-y-2">
+        <div className="text-center mb-8 space-y-3">
           <h1 className="text-xl font-semibold" data-testid="text-storefront-title">
             Items for Sale
           </h1>
           <p className="text-sm text-muted-foreground">
             Browse available items and reserve a pickup time
           </p>
+          <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1.5">
+            <MapPin className="w-3 h-3" />
+            Contact details and pickup location provided upon booking confirmation
+          </div>
         </div>
 
         {/* Loading state */}

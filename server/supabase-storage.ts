@@ -56,6 +56,7 @@ function toDb(obj: any): any {
     adminPin: "admin_pin",
     sellerName: "seller_name",
     pickupLocation: "pickup_location",
+    contactPhone: "contact_phone",
   };
   const result: any = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -83,6 +84,7 @@ function fromDb(obj: any): any {
     admin_pin: "adminPin",
     seller_name: "sellerName",
     pickup_location: "pickupLocation",
+    contact_phone: "contactPhone",
   };
   const result: any = {};
   for (const [k, v] of Object.entries(obj)) {
