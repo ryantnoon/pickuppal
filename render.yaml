@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pickuppal
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: NODE_ENV=production node dist/index.cjs
+    envVars:
+      - key: SUPABASE_URL
+        value: https://haulmizpiiwbfwdtbawu.supabase.co
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: 20
